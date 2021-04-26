@@ -9,7 +9,7 @@ import hts.personalization.service_pb2_grpc as personalization_service_grpc
 
 class PersonalizationService(personalization_service_grpc.PersonalizationServiceServicer):
     def GetRecommendedEvents(self, request, context):
-        return personalization_service.GetRecommendedEventsResponse(eventCollection=[])
+        return personalization_service.GetRecommendedEventsResponse(event_collection=[])
 
 port = os.environ.get("GRPC_PORT")
 
