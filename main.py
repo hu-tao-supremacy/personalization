@@ -44,7 +44,6 @@ class PersonalizationService(personalization_service_grpc.PersonalizationService
             # events to recommended
             event_ids = list(dictionary.keys())
             size = min(k_events, len(event_ids))
-            print('size', size, k_events, len(event_ids))
             choice = np.random.choice(event_ids, p=prob, size=size, replace=False)
 
             query_events = session.query(Event).filter(Event.id.in_(choice)).all()
