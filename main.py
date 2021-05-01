@@ -28,19 +28,23 @@ class PersonalizationService(personalization_service_grpc.PersonalizationService
         session = DBSession()
         try:
             user_id = request.user_id
+            k_events = 3
             user_recommendation_score = session.query(UserEvent).filter(UserEvent.user_id == user_id).join(EventRecommendation, UserEvent.event_id == EventRecommendation.event_id).with_entities(EventRecommendation.score)
 
             dictionary = {}
             for item in user_recommendation_score:
                 dictionary = merge_with(sum, dictionary, item[0])
-
             
-            prob = softmax(list(dictionary.values()))
+            events_score = list(dictionary.values())
+            if len(events_score) == 0:
+                return  personalization_service.GetRecommendedEventsResponse(event_collection=[])
+
+            prob = softmax(events_score)
 
             # events to recommended
             weight = list(dictionary.values())
             index = list(dictionary.keys())
-            size = min(4, len(index))
+            size = min(k_events, len(index))
             choice = np.random.choice(index, p=prob, size=size, replace=False)
 
             query_events = session.query(Event).filter(Event.id.in_(choice)).all()
