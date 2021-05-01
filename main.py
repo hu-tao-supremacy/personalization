@@ -10,7 +10,8 @@ from db_model import (
     DBSession,
     UserEvent,
     EventRecommendation,
-    Event
+    Event,
+    EventDuration
 )
 from helper import (
     getInt32Value,
@@ -21,6 +22,8 @@ from toolz.dicttoolz import merge_with
 from scipy.special import softmax
 from random import choices
 import numpy as np 
+from datetime import datetime
+from sqlalchemy import func
 
 
 class PersonalizationService(personalization_service_grpc.PersonalizationServiceServicer):
@@ -29,23 +32,36 @@ class PersonalizationService(personalization_service_grpc.PersonalizationService
         try:
             user_id = request.user_id
             k_events = request.k_events
-            user_recommendation_score = session.query(UserEvent).filter(UserEvent.user_id == user_id).join(EventRecommendation, UserEvent.event_id == EventRecommendation.event_id).with_entities(EventRecommendation.score)
+            user_recommendation_score = session.query(UserEvent)\
+            .filter(UserEvent.user_id == user_id)\
+            .join(EventRecommendation, UserEvent.event_id == EventRecommendation.event_id)\
+            .with_entities(EventRecommendation.score)
 
             dictionary = {}
             for item in user_recommendation_score:
                 dictionary = merge_with(sum, dictionary, item[0])
+            event_ids = list(dictionary.keys())
             
-            events_score = list(dictionary.values())
+            # check durations 
+            event_ids_future_query = session.query(EventDuration).filter(EventDuration.event_id.in_(event_ids))\
+                .group_by(EventDuration.event_id)\
+                .order_by(func.min(EventDuration.start))\
+                .having(datetime.now() < func.min(EventDuration.start))\
+                .with_entities(EventDuration.event_id)
+            event_ids_future = []
+            for item in event_ids_future_query:
+                event_ids_future.append(str(item[0]))
+            
+            # events_score = list(dictionary.values())
+            events_score = [dictionary[x] for x in event_ids_future]
             if len(events_score) == 0:
-                return  personalization_service.GetRecommendedEventsResponse(event_collection=[])
+                return personalization_service.GetRecommendedEventsResponse(event_collection=[])
 
             prob = softmax(events_score)
 
             # events to recommended
-            event_ids = list(dictionary.keys())
-            size = min(k_events, len(event_ids))
-            choice = np.random.choice(event_ids, p=prob, size=size, replace=False)
-
+            size = min(k_events, len(event_ids_future))
+            choice = np.random.choice(event_ids_future, p=prob, size=size, replace=False)
             query_events = session.query(Event).filter(Event.id.in_(choice)).all()
 
             data = map(
