@@ -52,11 +52,10 @@ class PersonalizationService(personalization_service_grpc.PersonalizationService
             for item in event_ids_future_query:
                 event_ids_future.append(str(item[0]))
             
-            # events_score = list(dictionary.values())
+            # get score and convert to prob using softmax
             events_score = [dictionary[x] for x in event_ids_future]
             if len(events_score) == 0:
                 return personalization_service.GetRecommendedEventsResponse(event_collection=[])
-
             prob = softmax(events_score)
 
             # events to recommended
