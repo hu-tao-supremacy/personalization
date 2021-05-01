@@ -75,6 +75,17 @@ class EventRecommendation(Base):
     event_vector = Column(ARRAY(FLOAT))
     score = Column(JSON)
 
+class EventDuration(Base):
+    __tablename__ = "event_duration"
+
+    def __str__(self):
+        return str(self.__class__) + ": " + str(self.__dict__)
+
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("event.id"))
+    start = Column(TIMESTAMP)
+    finish = Column(TIMESTAMP)
+
 
 Base.metadata.create_all(engine)
 
