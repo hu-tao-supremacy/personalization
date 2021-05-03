@@ -24,6 +24,9 @@ from random import choices
 import numpy as np 
 from datetime import datetime
 from sqlalchemy import func
+import pytz
+
+utc=pytz.UTC
 
 
 class PersonalizationService(personalization_service_grpc.PersonalizationServiceServicer):
@@ -49,9 +52,8 @@ class PersonalizationService(personalization_service_grpc.PersonalizationService
             
             event_ids_to_be_removed = []
             for item in duration_query:
-                if datetime.now() > duration_query[1]:
+                if datetime.now().replace(tzinfo=utc) > item[1].replace(tzinfo=utc):
                     event_ids_to_be_removed.append(str(duration_query[0]))
-
             event_ids_future = list(set(event_ids).difference(set(event_ids_to_be_removed)))
             
             # get score and convert to prob using softmax
