@@ -43,14 +43,16 @@ class PersonalizationService(personalization_service_grpc.PersonalizationService
             event_ids = list(dictionary.keys())
             
             # check durations 
-            event_ids_future_query = session.query(EventDuration).filter(EventDuration.event_id.in_(event_ids))\
+            duration_query = session.query(EventDuration).filter(EventDuration.event_id.in_(event_ids))\
                 .group_by(EventDuration.event_id)\
-                .order_by(func.min(EventDuration.start))\
-                .having(datetime.now() < func.min(EventDuration.start))\
-                .with_entities(EventDuration.event_id)
-            event_ids_future = []
-            for item in event_ids_future_query:
-                event_ids_future.append(str(item[0]))
+                .with_entities(EventDuration.event_id, func.min(EventDuration.start))
+            
+            event_ids_to_be_removed = []
+            for item in duration_query:
+                if datetime.now() > duration_query[1]:
+                    event_ids_to_be_removed.append(str(duration_query[0]))
+
+            event_ids_future = list(set(event_ids).difference(set(event_ids_to_be_removed)))
             
             # get score and convert to prob using softmax
             events_score = [dictionary[x] for x in event_ids_future]
@@ -86,7 +88,6 @@ class PersonalizationService(personalization_service_grpc.PersonalizationService
         except Exception as e:
             session.rollback()
             raise Exception(f"Something went wrong: {e}")
-            return personalization_service.GetRecommendedEventsResponse(event_collection=[])
         finally:
             session.close()
 
