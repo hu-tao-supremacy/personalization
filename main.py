@@ -53,7 +53,7 @@ class PersonalizationService(personalization_service_grpc.PersonalizationService
             event_ids_to_be_removed = []
             for item in duration_query:
                 if datetime.now().replace(tzinfo=utc) > item[1].replace(tzinfo=utc):
-                    event_ids_to_be_removed.append(str(duration_query[0]))
+                    event_ids_to_be_removed.append(str(item[0]))
             event_ids_future = list(set(event_ids).difference(set(event_ids_to_be_removed)))
             
             # get score and convert to prob using softmax
