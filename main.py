@@ -33,7 +33,7 @@ class PersonalizationService(personalization_service_grpc.PersonalizationService
             user_id = request.user_id
             k_events = request.k_events
             user_recommendation_score = session.query(UserEvent)\
-            .filter(UserEvent.user_id == user_id)\
+            .filter(UserEvent.user_id == user_id, EventRecommendation.score.isnot(None))\
             .join(EventRecommendation, UserEvent.event_id == EventRecommendation.event_id)\
             .with_entities(EventRecommendation.score)
 
