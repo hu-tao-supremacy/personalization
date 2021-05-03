@@ -83,9 +83,10 @@ class PersonalizationService(personalization_service_grpc.PersonalizationService
                 query_events,
             )
             return personalization_service.GetRecommendedEventsResponse(event_collection=data)
-        except:
+        except Exception as e:
             session.rollback()
-            raise
+            raise Exception(f"Something went wrong: {e}")
+            return personalization_service.GetRecommendedEventsResponse(event_collection=[])
         finally:
             session.close()
 
